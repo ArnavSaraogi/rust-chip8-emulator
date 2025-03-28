@@ -17,7 +17,7 @@ The goal of this project is to write a CHIP-8 emulator in Rust, and develop a si
 10. Develop custom CHIP-8 code to play on the emulator
 
 ### Timeline
-We are aiming to complete 1-5 by Checkpoint 1, and 6-10 by Checkpoint 2.
+We are aiming to complete 1-3 by Checkpoint 1, and 4-7 by Checkpoint 2, and 7-10 by the submission date.
 
 ## Possible Challenges
 We think there could be challenges in figuring out how to properly display the graphics specified by CHIP-8 programs and have working animations for the display. Error handling could also be challenging to implement due to the large range of potential errors we would need to account for. Finally, it could be a challenge to understand the low-level aspects of this project, since we don't have much experience with low-level programming.
