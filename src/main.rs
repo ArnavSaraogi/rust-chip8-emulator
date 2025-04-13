@@ -1,3 +1,7 @@
+mod chip8;
+use chip8::Chip8;
+
 fn main() {
-    println!("Hello, world!");
+    let mut chip8: Chip8 = Chip8::default();
+    chip8.print();
 }
