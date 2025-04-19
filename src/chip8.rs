@@ -1,8 +1,6 @@
 use crate::display::{self, Display};
 
 const NUM_ADRESSES: usize = 4096;
-const DISPLAY_WIDTH: usize = 64;
-const DISPLAY_HEGHT: usize = 32; 
 const STACK_MAX: usize = 16;
 const NUM_REGISTERS: usize = 16;
 
@@ -37,11 +35,15 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
-        self.display.render();
-    }
-
-    pub fn print(&self) {
-        print!("{:#?}", self);
+        while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {
+            // 1. fetch opcode
+            // 2. decode opcode
+            // 3. execute it (update state: memory, registers, display, sound, etc.)
+            // 4. update timers
+            // 5. render display
+            // 6. handle inputs
+            self.display.render();
+        }
     }
 
     fn load_fonts(&mut self) {
@@ -63,5 +65,9 @@ impl Chip8 {
                                 0xF0, 0x80, 0xF0, 0x80, 0x80]; // F
         
         self.memory[0x050..0x0A0].copy_from_slice(&fonts);
+    }
+
+    pub fn print(&self) {
+        print!("{:#?}", self);
     }
 }

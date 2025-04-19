@@ -5,7 +5,7 @@ const HEIGHT: usize = 32;
 
 #[derive(Debug)]
 pub struct Display {
-    frame_buffer: [[bool; WIDTH]; HEIGHT],
+    pub frame_buffer: [[bool; WIDTH]; HEIGHT],
     window: Window,
 }
 
@@ -17,7 +17,10 @@ impl Display {
                 "Idek",
                 WIDTH,
                 HEIGHT, 
-                WindowOptions::default(),
+                WindowOptions {
+                    scale: minifb::Scale::X16,
+                    ..WindowOptions::default()
+                },
             ).unwrap_or_else(|e| {
                 panic!("{}", e);
             }),
@@ -45,5 +48,13 @@ impl Display {
         }
 
         self.window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+    }
+
+    pub fn is_open(&self) -> bool {
+        self.window.is_open()
+    }
+
+    pub fn is_key_down(&self, key: Key) -> bool {
+        self.window.is_key_down(key)
     }
 }
