@@ -1,3 +1,4 @@
+
 const NUM_ADRESSES: usize = 4096;
 const DISPLAY_WIDTH: usize = 64;
 const DISPLAY_HEGHT: usize = 32; 
