@@ -1,3 +1,4 @@
+use crate::display::{self, Display};
 
 const NUM_ADRESSES: usize = 4096;
 const DISPLAY_WIDTH: usize = 64;
@@ -8,7 +9,7 @@ const NUM_REGISTERS: usize = 16;
 #[derive(Debug)]
 pub struct Chip8 {
     memory: [u8; NUM_ADRESSES],
-    display: [[bool; DISPLAY_WIDTH]; DISPLAY_HEGHT],
+    display: Display,
     program_counter: u16,
     i_register: u16,
     stack: [u16; STACK_MAX],
@@ -21,7 +22,7 @@ impl Chip8 {
     pub fn default() -> Self {
         let mut chip8 = Chip8 {
             memory: [0; NUM_ADRESSES],
-            display: [[false; DISPLAY_WIDTH]; DISPLAY_HEGHT],
+            display: Display::default(),
             program_counter: 0,
             i_register: 0,
             stack: [0; STACK_MAX],
@@ -33,6 +34,10 @@ impl Chip8 {
         chip8.load_fonts();
 
         chip8
+    }
+
+    pub fn run(&mut self) {
+        self.display.render();
     }
 
     pub fn print(&self) {
