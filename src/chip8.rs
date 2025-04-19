@@ -1,8 +1,13 @@
-use crate::display::{self, Display};
+use crate::display::Display;
+use crate::timers::Timers;
+use std::time::{Duration, Instant};
+use std::thread::sleep;
 
 const NUM_ADRESSES: usize = 4096;
 const STACK_MAX: usize = 16;
 const NUM_REGISTERS: usize = 16;
+const TICK_RATE: f64 = 1.0 / 60.0;
+const INSTRUCTIONS_PER_FRAME: usize = 700 / 60;
 
 #[derive(Debug)]
 pub struct Chip8 {
@@ -11,8 +16,7 @@ pub struct Chip8 {
     program_counter: u16,
     i_register: u16,
     stack: [u16; STACK_MAX],
-    dt_register: u8,
-    st_register: u8,
+    timers: Timers,
     variable_registers: [u8; NUM_REGISTERS],
 }
 
@@ -24,8 +28,7 @@ impl Chip8 {
             program_counter: 0,
             i_register: 0,
             stack: [0; STACK_MAX],
-            dt_register: 0,
-            st_register: 0,
+            timers: Timers::default(),
             variable_registers: [0; NUM_REGISTERS],
         };
         
@@ -35,14 +38,32 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
+        let mut last_tick = Instant::now();
+
         while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {
             // 1. fetch opcode
+            
+
             // 2. decode opcode
+
+
             // 3. execute it (update state: memory, registers, display, sound, etc.)
+
+
             // 4. update timers
+            self.timers.decrement_timers();
+
             // 5. render display
-            // 6. handle inputs
             self.display.render();
+
+            // 6. handle inputs
+
+            //ensure while loop runs at 60 hz
+            let time_elapsed = last_tick.elapsed();
+            if time_elapsed < Duration::from_secs_f64(TICK_RATE) {
+                sleep(Duration::from_secs_f64(TICK_RATE) - time_elapsed);
+            }
+            last_tick = Instant::now();
         }
     }
 
