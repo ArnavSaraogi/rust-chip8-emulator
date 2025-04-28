@@ -15,8 +15,12 @@ impl Timers {
     }
 
     pub fn decrement_timers(&mut self) {
-        self.dt_register -= 1;
-        self.st_register -= 1;
+        if self.dt_register > 0 {
+            self.dt_register -= 1;
+        }
+        if self.st_register > 0 {
+            self.st_register -= 1;
+        }
 
         //need thread to generate beep when st_register == 0, avoid holding up code
     }

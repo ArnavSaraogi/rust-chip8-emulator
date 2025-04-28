@@ -1,5 +1,7 @@
 use crate::display::Display;
 use crate::timers::Timers;
+use std::fs::File;
+use std::io::{self, Read};
 use std::time::{Duration, Instant};
 use std::thread::sleep;
 
@@ -13,7 +15,7 @@ const INSTRUCTIONS_PER_FRAME: usize = 700 / 60;
 pub struct Chip8 {
     memory: [u8; NUM_ADRESSES],
     display: Display,
-    program_counter: u16,
+    pc: u16,
     i_register: u16,
     stack: [u16; STACK_MAX],
     timers: Timers,
@@ -25,7 +27,7 @@ impl Chip8 {
         let mut chip8 = Chip8 {
             memory: [0; NUM_ADRESSES],
             display: Display::default(),
-            program_counter: 0,
+            pc: 0x200,
             i_register: 0,
             stack: [0; STACK_MAX],
             timers: Timers::default(),
@@ -41,14 +43,10 @@ impl Chip8 {
         let mut last_tick = Instant::now();
 
         while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {
-            // 1. fetch opcode
-            
-
-            // 2. decode opcode
-
-
-            // 3. execute it (update state: memory, registers, display, sound, etc.)
-
+            for _ in 0..INSTRUCTIONS_PER_FRAME {
+                //fetch, decode, execute opcode (update state: memory, registers, display, sound, etc.)
+                self.execute_opcode();
+            }
 
             // 4. update timers
             self.timers.decrement_timers();
@@ -60,11 +58,18 @@ impl Chip8 {
 
             //ensure while loop runs at 60 hz
             let time_elapsed = last_tick.elapsed();
-            if time_elapsed < Duration::from_secs_f64(TICK_RATE) {
-                sleep(Duration::from_secs_f64(TICK_RATE) - time_elapsed);
+            let target_duration = Duration::from_secs_f64(TICK_RATE);
+            if time_elapsed < target_duration {
+                sleep(target_duration - time_elapsed);
             }
             last_tick = Instant::now();
         }
+    }
+
+    pub fn load_rom(&mut self, path: &str) -> io::Result<()>{
+        let mut file = File::open(path)?;
+        file.read(&mut self.memory[0x200..])?;
+        Ok(())
     }
 
     fn load_fonts(&mut self) {
@@ -86,6 +91,17 @@ impl Chip8 {
                                 0xF0, 0x80, 0xF0, 0x80, 0x80]; // F
         
         self.memory[0x050..0x0A0].copy_from_slice(&fonts);
+    }
+
+    fn execute_opcode(&mut self) {
+        let opcode = self.bytes_to_opcode();
+        //match statment
+    }
+
+    fn bytes_to_opcode(&mut self) -> u16 {
+        let high_byte = self.memory[self.pc as usize];
+        let low_byte = self.memory[(self.pc + 1) as usize];
+        ((high_byte as u16) << 8) | (low_byte as u16)
     }
 
     pub fn print(&self) {
