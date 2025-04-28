@@ -113,14 +113,47 @@ impl Chip8 {
             0x4000 => if self.variable_registers[vx as usize] != nn {self.pc += 2}, // skips next instruction if VX != NN
             0x5000 => if self.variable_registers[vx as usize] == self.variable_registers[vy as usize] {self.pc += 2}, // skips next instruction if VX == VY
             0x6000 => self.variable_registers[vx as usize] = nn, // sets VX to NN
-            0x7000 => self.variable_registers[vx as usize] += nn, // adds NN to VX
+            0x7000 => self.variable_registers[vx as usize] = self.variable_registers[vx as usize].wrapping_add(nn), // adds NN to VX
             0x8000 => {
                 match n {
                     0x0000 => self.variable_registers[vx as usize] = self.variable_registers[vy as usize], // sets VX to value of VY
                     0x0001 => self.variable_registers[vx as usize] |= self.variable_registers[vy as usize], // sets VX to VX OR VY
                     0x0002 => self.variable_registers[vx as usize] &= self.variable_registers[vy as usize], // sets VX to VX AND VY
                     0x0003 => self.variable_registers[vx as usize] ^= self.variable_registers[vy as usize], // sets VX to VX XOR VY
-                    0x004 => (),
+                    0x0004 => { // adds VY to VX. Makes VF 1 or 0 based on if it overflows or doesn't, respectively
+                        if (self.variable_registers[vx as usize] as u16) + (self.variable_registers[vy as usize] as u16) > 255 {
+                            self.variable_registers[16] = 1;
+                        } else {
+                            self.variable_registers[16] = 0;
+                        }
+                        self.variable_registers[vx as usize] = self.variable_registers[vx as usize].wrapping_add(self.variable_registers[vy as usize]);
+                    } 
+                    0x0005 => { // subtracts VY from VX. Makes VF 0 or 1 based on if it underflows or doesn't, respectively
+                        if self.variable_registers[vx as usize] < self.variable_registers[vy as usize] {
+                            self.variable_registers[16] = 0;
+                        } else {
+                            self.variable_registers[16] = 1;
+                        }
+                        self.variable_registers[vx as usize] = self.variable_registers[vx as usize].wrapping_sub(self.variable_registers[vy as usize]);
+                    }
+                    0x0006 => { // shifts VX right, stores least significant bit in VF
+                        let lsb = self.variable_registers[vx as usize] & 1;
+                        self.variable_registers[vx as usize] = self.variable_registers[vx as usize] >> 1;
+                        self.variable_registers[16] = lsb;
+                    }
+                    0x0007 => { // sets VX to VY - VX. Makes VF 0 or 1 based on if it underflows or doesn't, respectively
+                        if self.variable_registers[vy as usize] < self.variable_registers[vx as usize] {
+                            self.variable_registers[16] = 0;
+                        } else {
+                            self.variable_registers[16] = 1;
+                        }
+                        self.variable_registers[vx as usize] = self.variable_registers[vy as usize].wrapping_sub(self.variable_registers[vx as usize]);
+                    }
+                    0x000E => { // shifts VX to left, stores most significant bit in VF
+                        let msb = self.variable_registers[vx as usize] >> 7;
+                        self.variable_registers[vx as usize] = self.variable_registers[vx as usize] << 1;
+                        self.variable_registers[16] = msb;
+                    }
                     _ => ()
                 }
             }
