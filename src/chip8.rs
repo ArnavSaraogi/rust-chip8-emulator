@@ -45,7 +45,8 @@ impl Chip8 {
         while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {
             for _ in 0..INSTRUCTIONS_PER_FRAME {
                 //fetch, decode, execute opcode (update state: memory, registers, display, sound, etc.)
-                self.execute_opcode();
+                let opcode = self.fetch_opcode();
+                self.execute_opcode(opcode);
             }
 
             // 4. update timers
@@ -93,14 +94,44 @@ impl Chip8 {
         self.memory[0x050..0x0A0].copy_from_slice(&fonts);
     }
 
-    fn execute_opcode(&mut self) {
-        let opcode = self.bytes_to_opcode();
-        //match statment
+    fn execute_opcode(&mut self, opcode: u16) {
+        let vx = opcode & 0x0F00;
+        let vy = opcode & 0x00F0;
+        let n = opcode & 0x000F;
+        let nn = (opcode & 0x00FF) as u8;
+        let address = opcode & 0x0FFF;
+        
+        match opcode & 0xF000 {
+            0x0000 => {
+                //0NNN --> call machine code at address NNN
+                //00E0 --> clear display
+                //00EE --> Return from subroutine
+            }
+            0x1000 => self.pc = address,  // set pc to NNN
+            0x2000 => {}  // NEED TO IMPLEMENT, call subroutine at NNN 
+            0x3000 => if self.variable_registers[vx as usize] == nn {self.pc += 2}, // skips next instruction if VX == NN
+            0x4000 => if self.variable_registers[vx as usize] != nn {self.pc += 2}, // skips next instruction if VX != NN
+            0x5000 => if self.variable_registers[vx as usize] == self.variable_registers[vy as usize] {self.pc += 2}, // skips next instruction if VX == VY
+            0x6000 => self.variable_registers[vx as usize] = nn, // sets VX to NN
+            0x7000 => self.variable_registers[vx as usize] += nn, // adds NN to VX
+            0x8000 => {
+                match n {
+                    0x0000 => self.variable_registers[vx as usize] = self.variable_registers[vy as usize], // sets VX to value of VY
+                    0x0001 => self.variable_registers[vx as usize] |= self.variable_registers[vy as usize], // sets VX to VX OR VY
+                    0x0002 => self.variable_registers[vx as usize] &= self.variable_registers[vy as usize], // sets VX to VX AND VY
+                    0x0003 => self.variable_registers[vx as usize] ^= self.variable_registers[vy as usize], // sets VX to VX XOR VY
+                    0x004 => (),
+                    _ => ()
+                }
+            }
+            _ => {}
+        }
     }
 
-    fn bytes_to_opcode(&mut self) -> u16 {
+    fn fetch_opcode(&mut self) -> u16 {
         let high_byte = self.memory[self.pc as usize];
         let low_byte = self.memory[(self.pc + 1) as usize];
+        self.pc += 2;
         ((high_byte as u16) << 8) | (low_byte as u16)
     }
 
