@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Timers {
-    dt_register: u8,
-    st_register: u8
+    pub dt_register: u8,
+    pub st_register: u8
 }
 
 impl Timers {
