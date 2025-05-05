@@ -6,7 +6,7 @@ const HEIGHT: usize = 32;
 #[derive(Debug)]
 pub struct Display {
     pub frame_buffer: [[bool; WIDTH]; HEIGHT],
-    window: Window,
+    pub window: Window,
 }
 
 impl Display {
@@ -56,5 +56,13 @@ impl Display {
 
     pub fn is_key_down(&self, key: Key) -> bool {
         self.window.is_key_down(key)
+    }
+
+    pub fn clear(&mut self) {
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                self.frame_buffer[row][col] = false;
+            }
+        }
     }
 }

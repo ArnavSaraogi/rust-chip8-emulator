@@ -1,6 +1,7 @@
 mod chip8;
 mod display;
 mod timers;
+mod stack;
 use chip8::Chip8;
 
 fn main() {

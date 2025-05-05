@@ -1,16 +1,19 @@
 use crate::display::Display;
 use crate::timers::Timers;
+use crate::stack::Stack;
 use std::fs::File;
 use std::io::{self, Read};
 use std::time::{Duration, Instant};
 use std::thread::sleep;
 use rand::Rng;
+use minifb::Key;
+
 
 const NUM_ADRESSES: usize = 4096;
-const STACK_MAX: usize = 16;
 const NUM_REGISTERS: usize = 16;
 const TICK_RATE: f64 = 1.0 / 60.0;
-const INSTRUCTIONS_PER_FRAME: usize = 700 / 60;
+const INSTRUCTIONS_PER_FRAME: usize = 600 / 60;
+const NUM_KEYS: usize = 16;
 
 #[derive(Debug)]
 pub struct Chip8 {
@@ -18,9 +21,10 @@ pub struct Chip8 {
     display: Display,
     pc: u16,
     i_register: u16,
-    stack: [u16; STACK_MAX],
+    stack: Stack,
     timers: Timers,
     variable_registers: [u8; NUM_REGISTERS],
+    key_states: [bool; NUM_KEYS],
 }
 
 impl Chip8 {
@@ -30,9 +34,10 @@ impl Chip8 {
             display: Display::default(),
             pc: 0x200,
             i_register: 0,
-            stack: [0; STACK_MAX],
+            stack: Stack::default(),
             timers: Timers::default(),
             variable_registers: [0; NUM_REGISTERS],
+            key_states: [false; NUM_KEYS]
         };
         
         chip8.load_fonts();
@@ -43,20 +48,21 @@ impl Chip8 {
     pub fn run(&mut self) {
         let mut last_tick = Instant::now();
 
-        while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {
+        while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {            
             for _ in 0..INSTRUCTIONS_PER_FRAME {
                 //fetch, decode, execute opcode (update state: memory, registers, display, sound, etc.)
                 let opcode = self.fetch_opcode();
                 self.execute_opcode(opcode);
             }
 
+            // check inputs
+            self.update_keys();
+
             // 4. update timers
             self.timers.decrement_timers();
 
             // 5. render display
             self.display.render();
-
-            // 6. handle inputs
 
             //ensure while loop runs at 60 hz
             let time_elapsed = last_tick.elapsed();
@@ -104,12 +110,17 @@ impl Chip8 {
         
         match opcode & 0xF000 {
             0x0000 => {
-                //0NNN --> call machine code at address NNN
-                //00E0 --> clear display
-                //00EE --> Return from subroutine
+                match opcode {
+                    0x00E0 => self.display.clear(), // clear display
+                    0x00EE => self.pc = self.stack.pop(), // return from subroutine
+                    _ => {},
+                }
             }
             0x1000 => self.pc = address,  // set pc to NNN
-            0x2000 => {}  // NEED TO IMPLEMENT, call subroutine at NNN 
+            0x2000 => { // call subroutine at NNN 
+                self.stack.push(self.pc);
+                self.pc = address;
+            }
             0x3000 => if self.variable_registers[vx as usize] == nn {self.pc += 2}, // skips next instruction if VX == NN
             0x4000 => if self.variable_registers[vx as usize] != nn {self.pc += 2}, // skips next instruction if VX != NN
             0x5000 => if self.variable_registers[vx as usize] == self.variable_registers[vy as usize] {self.pc += 2}, // skips next instruction if VX == VY
@@ -166,16 +177,17 @@ impl Chip8 {
                 self.variable_registers[vx as usize] = nn & random_num;
             }
             0xD000 => { //drawing sprite on display
-                //NEED TO IMPLEMENT
+                let x_cord = self.variable_registers[vx as usize] % 64;
+                let y_cord = self.variable_registers[vy as usize] % 32;
+                self.variable_registers[15] = 0;
+                self.draw_sprite_to_display(n, x_cord, y_cord);
             }
             0xE000 => {
+                let key = self.variable_registers[vx as usize];
+                let key_pressed = self.key_states[key as usize];
                 match opcode & 0x0FF {
-                    0x009E => { //if key in VX (lowest nibble) currently held down, skip next instruction
-                        //NEED TO IMPLEMENT
-                    }
-                    0x00A1 => { //if key in VX (lowest nibble) not held down, skip next instruction
-                        //NEED TO IMPLEMENT
-                    }
+                    0x009E => if key_pressed {self.pc += 2}, //if key in VX (lowest nibble) currently held down, skip next instruction
+                    0x00A1 => if !key_pressed {self.pc += 2} //if key in VX (lowest nibble) not held down, skip next instruction
                     _ => {}
                 }
             }
@@ -183,7 +195,20 @@ impl Chip8 {
                 match opcode & 0x00FF {
                     0x0007 => self.variable_registers[vx as usize] = self.timers.dt_register, // sets VX to value of delay timer
                     0x000A => { // key press awaited then stored in VX
-                        //NEED TO IMPLEMENT
+                        let mut key_pressed = false;
+                        let mut key = 0;
+                        for i in 0..NUM_KEYS {
+                            if self.key_states[i] {
+                                key_pressed = true;
+                                key = i;
+                                break;
+                            }
+                        }
+                        if key_pressed {
+                            self.variable_registers[vx as usize] = key as u8;
+                        } else {
+                            self.pc -= 2;
+                        }
                     }
                     0x0015 => self.timers.dt_register = self.variable_registers[vx as usize], // sets delay timer to VX
                     0x0018 => self.timers.st_register = self.variable_registers[vx as usize], // sets sound timer to VX
@@ -242,7 +267,60 @@ impl Chip8 {
         }
     }
 
-    pub fn print(&self) {
-        print!("{:#?}", self);
+    fn draw_sprite_to_display(&mut self, n: u16, x_cord: u8, y_cord: u8) {
+        let mut x = x_cord as usize;
+        let mut y = y_cord as usize;
+
+        for row in 0..n {
+            if y >= 32 {
+                break;
+            }
+            let sprite_byte = self.memory[(self.i_register + row) as usize];
+            for i in 0..8 {
+                if x >= 64 {
+                    break;
+                }
+                let pixel_bit = (sprite_byte >> (7 - i)) & 1;
+                if pixel_bit == 1 && self.display.frame_buffer[y][x] {
+                    self.display.frame_buffer[y][x] = false;
+                    self.variable_registers[15] = 1;
+                } else if pixel_bit == 1 && !(self.display.frame_buffer[y][x]) {
+                    self.display.frame_buffer[y][x] = true;
+                }
+                x += 1;
+            }
+            x = x_cord as usize;
+            y += 1;
+        }
     }
+
+    fn update_keys(&mut self) {
+        self.key_states = [false; 16];
+        let keys = self.display.window.get_keys();
+        for key in keys {
+            match key {
+                Key::Key1 => self.key_states[0x1] = true,
+                Key::Key2 => self.key_states[0x2] = true,
+                Key::Key3 => self.key_states[0x3] = true,
+                Key::Key4 => self.key_states[0xC] = true,
+                Key::Q    => self.key_states[0x4] = true,
+                Key::W    => self.key_states[0x5] = true,
+                Key::E    => self.key_states[0x6] = true,
+                Key::R    => self.key_states[0xD] = true,
+                Key::A    => self.key_states[0x7] = true,
+                Key::S    => self.key_states[0x8] = true,
+                Key::D    => self.key_states[0x9] = true,
+                Key::F    => self.key_states[0xE] = true,
+                Key::Z    => self.key_states[0xA] = true,
+                Key::X    => self.key_states[0x0] = true,
+                Key::C    => self.key_states[0xB] = true,
+                Key::V    => self.key_states[0xF] = true,
+                _ => {}
+            }
+        }
+    }
+
+    /* pub fn print(&self) {
+        print!("{:#?}", self);
+    } */ 
 }
