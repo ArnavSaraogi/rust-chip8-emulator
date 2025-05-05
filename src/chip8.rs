@@ -50,18 +50,11 @@ impl Chip8 {
 
         while self.display.is_open() && !self.display.is_key_down(minifb::Key::Escape) {            
             for _ in 0..INSTRUCTIONS_PER_FRAME {
-                //fetch, decode, execute opcode (update state: memory, registers, display, sound, etc.)
                 let opcode = self.fetch_opcode();
                 self.execute_opcode(opcode);
             }
-
-            // check inputs
             self.update_keys();
-
-            // 4. update timers
             self.timers.decrement_timers();
-
-            // 5. render display
             self.display.render();
 
             //ensure while loop runs at 60 hz
@@ -319,8 +312,4 @@ impl Chip8 {
             }
         }
     }
-
-    /* pub fn print(&self) {
-        print!("{:#?}", self);
-    } */ 
 }

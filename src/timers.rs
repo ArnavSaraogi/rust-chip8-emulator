@@ -21,7 +21,5 @@ impl Timers {
         if self.st_register > 0 {
             self.st_register -= 1;
         }
-
-        //need thread to generate beep when st_register == 0, avoid holding up code
     }
 }
