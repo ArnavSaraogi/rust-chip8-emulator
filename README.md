@@ -2,7 +2,7 @@
 Arnav Saraogi (arnavs10) and Michele Autorino (ma152)
 
 ### Overview
-This is a CHIP-8 emulator with a command-line interface, built in Rust. It allows you to play a variety of classic CHIP-8 games on your computer. Check RUN.md for how to run it!
+This is a CHIP-8 emulator with a command-line interface, built in Rust. It allows you to play a variety of classic CHIP-8 games on your computer. Check [RUN.md](RUN.md) for how to run it!
 
 ### Features
 - Full CHIP-8 instruction set implementation
