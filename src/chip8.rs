@@ -141,7 +141,8 @@ impl Chip8 {
                         }
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize].wrapping_sub(self.variable_registers[vy as usize]);
                     }
-                    0x0006 => { // shifts VX right, stores least significant bit in VF
+                    0x0006 => { // puts VY into VX, shifts VX right, stores least significant bit in VF
+                        self.variable_registers[vx as usize] = self.variable_registers[vy as usize];
                         let lsb = self.variable_registers[vx as usize] & 1;
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize] >> 1;
                         self.variable_registers[15] = lsb;
@@ -154,7 +155,8 @@ impl Chip8 {
                         }
                         self.variable_registers[vx as usize] = self.variable_registers[vy as usize].wrapping_sub(self.variable_registers[vx as usize]);
                     }
-                    0x000E => { // shifts VX to left, stores most significant bit in VF
+                    0x000E => { // puts VY into VX, shifts VX to left, stores most significant bit in VF
+                        self.variable_registers[vx as usize] = self.variable_registers[vy as usize];
                         let msb = self.variable_registers[vx as usize] >> 7;
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize] << 1;
                         self.variable_registers[15] = msb;
@@ -178,7 +180,7 @@ impl Chip8 {
             0xE000 => {
                 let key = self.variable_registers[vx as usize];
                 let key_pressed = self.key_states[key as usize];
-                match opcode & 0x0FF {
+                match opcode & 0x00FF {
                     0x009E => if key_pressed {self.pc += 2}, //if key in VX (lowest nibble) currently held down, skip next instruction
                     0x00A1 => if !key_pressed {self.pc += 2} //if key in VX (lowest nibble) not held down, skip next instruction
                     _ => {}
