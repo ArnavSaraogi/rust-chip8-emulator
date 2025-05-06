@@ -141,8 +141,7 @@ impl Chip8 {
                         }
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize].wrapping_sub(self.variable_registers[vy as usize]);
                     }
-                    0x0006 => { // puts VY into VX, shifts VX right, stores least significant bit in VF
-                        self.variable_registers[vx as usize] = self.variable_registers[vy as usize];
+                    0x0006 => { // shifts VX right, stores least significant bit in VF
                         let lsb = self.variable_registers[vx as usize] & 1;
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize] >> 1;
                         self.variable_registers[15] = lsb;
@@ -155,8 +154,7 @@ impl Chip8 {
                         }
                         self.variable_registers[vx as usize] = self.variable_registers[vy as usize].wrapping_sub(self.variable_registers[vx as usize]);
                     }
-                    0x000E => { // puts VY into VX, shifts VX to left, stores most significant bit in VF
-                        self.variable_registers[vx as usize] = self.variable_registers[vy as usize];
+                    0x000E => { // shifts VX to left, stores most significant bit in VF
                         let msb = self.variable_registers[vx as usize] >> 7;
                         self.variable_registers[vx as usize] = self.variable_registers[vx as usize] << 1;
                         self.variable_registers[15] = msb;
