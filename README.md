@@ -12,10 +12,10 @@ This is a CHIP-8 emulator with a command-line interface, built in Rust. It allow
 
 ### Controls
 Each CHIP-8 game uses some subset of these keys:
-
 ```
 1 2 3 4
 Q W E R
 A S D F
 Z X C V
 ```
+Each game will specify which you need.
