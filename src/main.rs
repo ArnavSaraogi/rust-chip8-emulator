@@ -46,7 +46,7 @@ fn main() {
             2 => {
                 path = "roms/blitz.ch8";
                 println!("You are in a plane, and you must destroy the towers of a town.\n\
-                        Your plane is flying left to right, and goes down. Use W to drop a bomb.\n\
+                        Your plane is flying left to right, and goes down. Use W to drop a bomb and to start game.\n\
                         The game ends when you crash yourself on a tower...");
             }
             3 => {
@@ -66,7 +66,7 @@ fn main() {
             }
             6 => {
                 path = "roms/space_invaders.ch8";
-                println!("Destroy the invaders with your ship. Shoot with W, move with Q and E.");
+                println!("Destroy the invaders with your ship. Start game and shoot with W, move with Q and E.");
             }
             _ => {}
         }
